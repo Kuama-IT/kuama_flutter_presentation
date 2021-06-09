@@ -5,6 +5,11 @@ abstract class PermissionBlocState extends Equatable {
 
   const PermissionBlocState({required this.permission});
 
+  bool get isGranted {
+    final state = this;
+    return state is PermissionBlocRequested && state.status.isGranted;
+  }
+
   PermissionBlocState toIdle() => PermissionBlocIdle(permission: permission);
 
   PermissionBlocState toRequestConfirm() => PermissionBlocRequestConfirm(permission: permission);
