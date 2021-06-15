@@ -1,0 +1,197 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:kuama_dart_domain/kuama_dart_domain.dart';
+import 'package:kuama_dart_domain/permissions.dart';
+import 'package:kuama_flutter_presentation/src/features/permissions/bloc/permission_bloc.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
+
+import 'permission_bloc_test.mocks.dart';
+
+@GenerateMocks([
+  CanAskPermission,
+  UpdateCanAskPermission,
+  CheckPermission,
+  RequestPermission,
+])
+void main() {
+  late MockCanAskPermission mockCanAsk;
+  late MockUpdateCanAskPermission mockUpdateCanAsk;
+  late MockCheckPermission mockCheck;
+  late MockRequestPermission mockRequest;
+
+  late PermissionBloc bloc;
+
+  final tPermission = Permission.contacts;
+
+  setUp(() {
+    GetIt.instance
+      ..reset()
+      ..registerSingleton<CanAskPermission>(mockCanAsk = MockCanAskPermission())
+      ..registerSingleton<UpdateCanAskPermission>(mockUpdateCanAsk = MockUpdateCanAskPermission())
+      ..registerSingleton<CheckPermission>(mockCheck = MockCheckPermission())
+      ..registerSingleton<RequestPermission>(mockRequest = MockRequestPermission());
+
+    bloc = PermissionBloc(permission: Permission.contacts);
+  });
+
+  group('Test PermissionBloc', () {
+    test('Request->RequireNegated->PermissionDenied', () async {
+      when(mockCanAsk.call(any)).thenAnswer((_) async* {
+        await Future.delayed(const Duration());
+        yield Right(false);
+      });
+
+      bloc.request();
+
+      await expectLater(
+        bloc.stream,
+        emitsInOrder([
+          PermissionBlocRequesting(
+            permission: tPermission,
+          ),
+          PermissionBlocRequested(
+            permission: Permission.contacts,
+            status: PermissionStatus.denied,
+          ),
+        ]),
+      );
+    });
+
+    test('Request->RequireGranted->PermissionDenied', () async {
+      when(mockCanAsk.call(any)).thenAnswer((_) async* {
+        yield Right(true);
+      });
+      when(mockCheck.call(any)).thenAnswer((_) async* {
+        yield Right(PermissionStatus.denied);
+      });
+
+      bloc.request();
+
+      await expectLater(
+        bloc.stream,
+        emitsInOrder([
+          PermissionBlocRequesting(
+            permission: tPermission,
+          ),
+          PermissionBlocRequestConfirm(
+            permission: Permission.contacts,
+          ),
+        ]),
+      );
+    });
+
+    test('Request->RequireGranted->PermissionGranted', () async {
+      when(mockCanAsk.call(any)).thenAnswer((_) async* {
+        yield Right(true);
+      });
+      when(mockCheck.call(any)).thenAnswer((_) async* {
+        yield Right(PermissionStatus.granted);
+      });
+
+      bloc.request();
+
+      await expectLater(
+        bloc.stream,
+        emitsInOrder([
+          PermissionBlocRequesting(
+            permission: tPermission,
+          ),
+          PermissionBlocRequested(
+            permission: Permission.contacts,
+            status: PermissionStatus.granted,
+          ),
+        ]),
+      );
+    });
+
+    test('RequireConfirm->ConfirmFailed->PermissionDenied', () async {
+      bloc.emit(PermissionBlocRequestConfirm(
+        permission: Permission.contacts,
+      ));
+
+      when(mockUpdateCanAsk.call(any)).thenAnswer((_) async* {
+        yield Right(false);
+      });
+      when(mockCanAsk.call(any)).thenAnswer((_) async* {
+        yield Right(false);
+      });
+
+      bloc.confirmRequest(false);
+
+      await expectLater(
+        bloc.stream,
+        emitsInOrder([
+          PermissionBlocRequesting(
+            permission: tPermission,
+          ),
+          PermissionBlocRequested(
+            permission: Permission.contacts,
+            status: PermissionStatus.denied,
+          ),
+        ]),
+      );
+    });
+
+    test('RequireConfirm->ConfirmSuccess->PermissionDenied', () async {
+      bloc.emit(PermissionBlocRequestConfirm(
+        permission: Permission.contacts,
+      ));
+
+      when(mockUpdateCanAsk.call(any)).thenAnswer((_) async* {
+        yield Right(true);
+      });
+      when(mockCanAsk.call(any)).thenAnswer((_) async* {
+        yield Right(true);
+      });
+      when(mockRequest.call(any)).thenAnswer((_) async* {
+        yield Right(PermissionStatus.denied);
+      });
+
+      bloc.confirmRequest(true);
+
+      await expectLater(
+        bloc.stream,
+        emitsInOrder([
+          PermissionBlocRequesting(
+            permission: tPermission,
+          ),
+          PermissionBlocRequested(
+            permission: Permission.contacts,
+            status: PermissionStatus.denied,
+          ),
+        ]),
+      );
+    });
+
+    test('RequireConfirm->ConfirmSuccess->PermissionGranted', () async {
+      bloc.emit(PermissionBlocRequestConfirm(
+        permission: Permission.contacts,
+      ));
+
+      when(mockUpdateCanAsk.call(any)).thenAnswer((_) async* {
+        yield Right(true);
+      });
+      when(mockCanAsk.call(any)).thenAnswer((_) async* {
+        yield Right(true);
+      });
+      when(mockRequest.call(any)).thenAnswer((_) async* {
+        yield Right(PermissionStatus.granted);
+      });
+
+      bloc.confirmRequest(true);
+
+      await expectLater(
+        bloc.stream,
+        emitsInOrder([
+          PermissionBlocRequesting(
+            permission: tPermission,
+          ),
+          PermissionBlocRequested(
+            permission: Permission.contacts,
+            status: PermissionStatus.granted,
+          ),
+        ]),
+      );
+    });
+  });
+}
