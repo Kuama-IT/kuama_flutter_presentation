@@ -7,24 +7,33 @@ abstract class PermissionEvent extends Equatable {
   bool? get stringify => true;
 }
 
+/// [PermissionBloc.load]
+class LoadPermissionBloc extends PermissionEvent {
+  final bool isLazy;
+
+  LoadPermissionBloc({this.isLazy = false});
+
+  @override
+  List<Object?> get props => [isLazy];
+}
+
 /// [PermissionBloc.confirmRequest]
-class ConfirmRequestPermissionEvent extends PermissionEvent {
+class ConfirmRequestPermissionBloc extends PermissionEvent {
   final bool canRequest;
 
-  ConfirmRequestPermissionEvent(this.canRequest);
+  ConfirmRequestPermissionBloc(this.canRequest);
 
   @override
   List<Object?> get props => const [];
 }
 
 /// [PermissionBloc.request]
-class RequestPermissionEvent extends PermissionEvent {
-  @override
-  List<Object?> get props => const [];
-}
+class RequestPermissionBloc extends PermissionEvent {
+  final bool canForce;
+  final bool? isConfirmRequired;
 
-/// [PermissionBloc.reRequest]
-class ReRequestPermissionEvent extends PermissionEvent {
+  RequestPermissionBloc({this.canForce = false, this.isConfirmRequired});
+
   @override
-  List<Object?> get props => const [];
+  List<Object?> get props => [canForce, isConfirmRequired];
 }

@@ -46,7 +46,7 @@ void main() {
 
     when(mockPermissionBloc.state).thenReturn(permission == EmissionType.alreadyHas
         ? PermissionBlocRequested(permission: tPermission, status: PermissionStatus.granted)
-        : PermissionBlocIdle(permission: tPermission));
+        : PermissionBlocRequested(permission: tPermission, status: PermissionStatus.denied));
     when(mockPermissionBloc.stream).thenAnswer((_) async* {
       if (permission == EmissionType.acquire) {
         yield PermissionBlocRequested(permission: tPermission, status: PermissionStatus.granted);

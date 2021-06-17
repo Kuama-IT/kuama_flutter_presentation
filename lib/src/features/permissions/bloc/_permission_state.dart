@@ -5,12 +5,59 @@ abstract class PermissionBlocState extends Equatable {
 
   const PermissionBlocState({required this.permission});
 
+  bool get isRequesting => this is PermissionBlocRequesting;
+
+  bool get canRequest {
+    final state = this;
+    if (state is PermissionBlocRequested) {
+      switch (state.status) {
+        case PermissionStatus.permanentlyDenied:
+          return false;
+        case PermissionStatus.denied:
+          return true;
+        case PermissionStatus.granted:
+          return false;
+      }
+    } else if (state is PermissionBlocRequesting) {
+      return false;
+    }
+    return true;
+  }
+
+  bool get canConfirmRequest => this is PermissionBlocRequestConfirm;
+
+  bool get canForceRequest {
+    final state = this;
+    if (state is PermissionBlocRequested) {
+      switch (state.status) {
+        case PermissionStatus.permanentlyDenied:
+        case PermissionStatus.denied:
+          return true;
+        case PermissionStatus.granted:
+          return false;
+      }
+    } else if (state is PermissionBlocRequesting) {
+      return false;
+    }
+    return true;
+  }
+
+  bool get isPermanentlyDenied {
+    final state = this;
+    return state is PermissionBlocRequested && state.status.isPermanentlyDenied;
+  }
+
+  bool get isDenied {
+    final state = this;
+    return state is PermissionBlocRequested && state.status.isDenied;
+  }
+
   bool get isGranted {
     final state = this;
     return state is PermissionBlocRequested && state.status.isGranted;
   }
 
-  PermissionBlocState toIdle() => PermissionBlocIdle(permission: permission);
+  PermissionBlocState toLoaded() => PermissionBlocLoaded(permission: permission);
 
   PermissionBlocState toRequestConfirm() => PermissionBlocRequestConfirm(permission: permission);
 
@@ -34,12 +81,12 @@ abstract class PermissionBlocState extends Equatable {
   bool? get stringify => true;
 }
 
-/// Waiting for an iteration with the bloc
-class PermissionBlocIdle extends PermissionBlocState {
-  PermissionBlocIdle({required Permission permission}) : super(permission: permission);
+/// The bloc has been loaded. Now you can interact with it
+class PermissionBlocLoaded extends PermissionBlocState {
+  PermissionBlocLoaded({required Permission permission}) : super(permission: permission);
 
   @override
-  List<Object> get props => [permission];
+  List<Object?> get props => [permission];
 }
 
 /// It is processing the request wait for a later status to interact with the bloc
