@@ -1,25 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:kuama_flutter_presentation/src/features/permissions/bloc/permission_bloc.dart';
+import 'package:provider/single_child_widget.dart';
 
 /// It asks for permission whenever possible and
 /// allows you to build the child based on the state of the block
-class PermissionBlocBuilder<TPermissionBloc extends PermissionBloc> extends StatefulWidget {
+class RequestPermissionBlocListener<TPermissionBloc extends PermissionBloc>
+    extends SingleChildStatefulWidget {
   final PermissionBloc? permissionBloc;
-  final Widget Function(BuildContext context, PermissionBlocState state) builder;
+  final bool canForce;
+  final bool isConfirmRequired;
 
-  const PermissionBlocBuilder({
+  const RequestPermissionBlocListener({
     Key? key,
     this.permissionBloc,
-    required this.builder,
-  }) : super(key: key);
+    this.canForce = false,
+    this.isConfirmRequired = true,
+    Widget? child,
+  }) : super(key: key, child: child);
 
   @override
-  _PermissionBlocBuilderState createState() => _PermissionBlocBuilderState();
+  _PermissionBlocBuilderState<TPermissionBloc> createState() => _PermissionBlocBuilderState();
 }
 
 class _PermissionBlocBuilderState<TPermissionBloc extends PermissionBloc>
-    extends State<PermissionBlocBuilder<TPermissionBloc>> {
+    extends SingleChildState<RequestPermissionBlocListener<TPermissionBloc>> {
   late PermissionBloc _permissionBloc;
 
   @override
@@ -30,7 +35,7 @@ class _PermissionBlocBuilderState<TPermissionBloc extends PermissionBloc>
   }
 
   @override
-  void didUpdateWidget(covariant PermissionBlocBuilder<TPermissionBloc> oldWidget) {
+  void didUpdateWidget(covariant RequestPermissionBlocListener<TPermissionBloc> oldWidget) {
     super.didUpdateWidget(oldWidget);
     final permissionBloc = widget.permissionBloc ?? context.read<TPermissionBloc>();
     if (_permissionBloc != permissionBloc) {
@@ -40,17 +45,17 @@ class _PermissionBlocBuilderState<TPermissionBloc extends PermissionBloc>
   }
 
   void onStateChanges(BuildContext context, PermissionBlocState state) {
-    if (state is PermissionBlocIdle) {
-      _permissionBloc.request();
+    if (state is PermissionBlocLoaded) {
+      _permissionBloc.request(isConfirmRequired: widget.isConfirmRequired);
     }
   }
 
   @override
-  Widget build(BuildContext context) {
-    return BlocConsumer<PermissionBloc, PermissionBlocState>(
+  Widget buildWithChild(BuildContext context, Widget? child) {
+    return BlocListener<PermissionBloc, PermissionBlocState>(
       bloc: _permissionBloc,
       listener: onStateChanges,
-      builder: widget.builder,
+      child: child,
     );
   }
 }

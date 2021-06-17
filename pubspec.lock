@@ -203,7 +203,7 @@ packages:
       name: file
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "6.1.2"
+    version: "6.1.0"
   fixnum:
     dependency: transitive
     description:
@@ -301,9 +301,11 @@ packages:
   kuama_dart_domain:
     dependency: "direct main"
     description:
-      path: "../kuama_dart_domain"
-      relative: true
-    source: path
+      path: "."
+      ref: master
+      resolved-ref: fbdd7eba4339c5e9ac82911445fc72b5e133e494
+      url: "https://github.com/Kuama-IT/kuama_dart_domain.git"
+    source: git
     version: "0.0.0"
   logging:
     dependency: transitive

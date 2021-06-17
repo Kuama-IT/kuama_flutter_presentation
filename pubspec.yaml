@@ -12,7 +12,10 @@ dependencies:
     sdk: flutter
 
   kuama_dart_domain:
-    path: ../kuama_dart_domain
+    git:
+      url: https://github.com/Kuama-IT/kuama_dart_domain.git
+      ref: master
+#    path: ../kuama_dart_domain
 
   provider: ^5.0.0
   bloc: ^7.0.0
@@ -25,6 +28,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  mockito: ^5.0.0
 
   # To generate .g files:
   # flutter packages pub run build_runner build --delete-conflicting-outputs
@@ -32,9 +36,8 @@ dev_dependencies:
   # The version depends on the packages that use it
   build_runner: ^1.0.0
 
-  mockito: ^5.0.0
 
-  index_generator: ^2.0.1
+  index_generator: ^2.0.2
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
