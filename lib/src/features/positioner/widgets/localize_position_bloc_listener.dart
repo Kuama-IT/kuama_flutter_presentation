@@ -37,6 +37,7 @@ class LocalizePositionBlocListener extends SingleChildStatelessWidget {
       providers: [
         BlocChangeHandler<PositionerBloc, PositionerBlocState>(
           bloc: positionerBloc,
+          canCallImmediately: true,
           onAcquired: (context, state) {
             if (state.canLocalize) {
               positionerBloc.localize(isRealTimeRequired: isRealTimeRequired);
