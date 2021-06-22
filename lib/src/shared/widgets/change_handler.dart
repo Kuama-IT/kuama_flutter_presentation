@@ -1,10 +1,15 @@
 import 'package:bloc/bloc.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 
 /// I allow to execute code whenever the value changes
 class ValueChangeHandler<T> extends SingleChildStatefulWidget {
-  final T value;
+  final T? value;
+
+  /// Call methods while the widget tree is being built
+  final bool canCallImmediately;
 
   /// It is called whenever the value is acquired
   final void Function(BuildContext context, T value)? onAcquired;
@@ -14,7 +19,8 @@ class ValueChangeHandler<T> extends SingleChildStatefulWidget {
 
   const ValueChangeHandler({
     Key? key,
-    required this.value,
+    this.value,
+    this.canCallImmediately = false,
     this.onAcquired,
     this.onLost,
     Widget? child,
@@ -25,25 +31,57 @@ class ValueChangeHandler<T> extends SingleChildStatefulWidget {
 }
 
 class _HandlerState<T> extends SingleChildState<ValueChangeHandler<T>> {
+  late T _value;
+
   @override
   void initState() {
     super.initState();
-    widget.onAcquired?.call(context, widget.value);
+    _value = widget.value ?? context.read<T>();
+    _acquire(_value);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final value = _value ?? context.watch<T>();
+    _updateValue(value);
   }
 
   @override
   void didUpdateWidget(covariant ValueChangeHandler<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.value != oldWidget.value) {
-      widget.onLost?.call(context, oldWidget.value);
-      widget.onAcquired?.call(context, widget.value);
-    }
+    final value = oldWidget.value ?? context.read<T>();
+    _updateValue(value);
   }
 
   @override
   void dispose() {
-    widget.onLost?.call(context, widget.value);
+    _lost(_value);
     super.dispose();
+  }
+
+  void _updateValue(T value) {
+    if (_value != value) {
+      _acquire(_value);
+      _value = value;
+      _lost(_value);
+    }
+  }
+
+  void _acquire(T value) {
+    _callFunction(() => widget.onAcquired?.call(context, value));
+  }
+
+  void _lost(T value) {
+    _callFunction(() => widget.onLost?.call(context, value));
+  }
+
+  void _callFunction(VoidCallback function) {
+    if (widget.canCallImmediately) {
+      function();
+    } else {
+      WidgetsBinding.instance!.addPostFrameCallback((_) => function());
+    }
   }
 
   @override
@@ -55,13 +93,15 @@ class BlocChangeHandler<TBloc extends Bloc<dynamic, TState>, TState>
     extends ValueChangeHandler<TBloc> {
   BlocChangeHandler({
     Key? key,
-    required TBloc bloc,
+    TBloc? bloc,
+    bool canCallImmediately = false,
     void Function(BuildContext context, TState state)? onAcquired,
     void Function(BuildContext context, TState state)? onLost,
     Widget? child,
   }) : super(
           key: key,
           value: bloc,
+          canCallImmediately: canCallImmediately,
           onAcquired:
               onAcquired != null ? (context, bloc) => onAcquired(context, bloc.state) : null,
           onLost: onLost != null ? (context, bloc) => onLost(context, bloc.state) : null,
